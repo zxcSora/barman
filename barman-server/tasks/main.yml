@@ -1,0 +1,44 @@
+---
+- name: Install Barman + PostgreSQL + Python Tools
+  apt:
+    name: "{{ item }}"
+    state: "present"
+  loop:
+    - postgresql
+    - python-dev
+    - python-argh
+    - python-psycopg2
+    - python-dateutil
+    - rsync
+    - python-setuptools
+    - barman
+
+- name: Barman main configuration file
+  template:
+    src: "templates/etc/barman.conf.j2"
+    dest: "/etc/barman.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Barman main configuration file
+  template:
+    src: "templates/etc/barman.d/example.conf.j2"
+    dest: "/etc/barman.d/{{BARMAN_SERVER_DB_CONF_FILE_NAME}}.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Creating slot for Barman connect
+  raw: |
+    su - barman -c "barman receive-wal --create-slot {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
+  ignore_errors: yes
+  
+- name: Barman slot creating
+  raw: |
+    su - barman -c "barman switch-wal --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
+    if [ "$?" -ne 0 ]
+    then
+    su - barman -c "barman switch-xlog --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
+    fi
+  ignore_errors: yes

@@ -1,0 +1,75 @@
+---
+- name: Barman client | Install Postgresql server
+  apt:
+    name: "postgresql-{{ BARMAN_CLIENT_POSTGRESQL_VERSION }}"
+
+- name: Barman client | Install Postgresql server tools
+  apt:
+    name: "{{ item }}"
+    state: "present"
+  loop: 
+    - postgresql-server-dev-9.6
+    - python-pip
+
+- name: Barman client | Install Postgresql server tools
+  pip:
+    name: "psycopg2"
+
+- name:  Barman client | WAL LEVEL
+  lineinfile: 
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/postgresql.conf"
+    regexp: "^#wal_level|^wal_level"
+    insertbefore: "BOF"
+    line: "wal_level = hot_standby"
+
+- name:  Barman client | MAX_WAL_SENDERS
+  lineinfile: 
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/postgresql.conf"
+    regexp: "^#max_wal_senders|^max_wal_senders"
+    insertbefore: "BOF"
+    line: "max_wal_senders = {{ BARMAN_CLIENT_POSTGRESQL_MAX_WAL_SENDERS }}"
+
+- name:  Barman client | LISTEN_ADDRESSES
+  lineinfile: 
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/postgresql.conf"
+    regexp: "^#listen_addresses|^listen_addresses"
+    insertbefore: "BOF"
+    line: "listen_addresses = '{{ BARMAN_CLINET_LISTEN_ADDRESSES}}'"
+
+- name:  Barman client | max_replication_slots enable
+  lineinfile:
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/postgresql.conf"
+    regexp: "^#max_replication_slots|^max_replication_slots"
+    insertbefore: "BOF"
+    line: "max_replication_slots = {{BARMAN_CLIENT_POSTGRESQL_MAX_REPL_SLOTS}}"
+
+- name: Barman client | Add comment to pg_hba
+  lineinfile: 
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/pg_hba.conf"
+    insertafter: "EOF"
+    regexp: "# Allow replication connections from backup server"
+    line: "# Allow replication connections from backup server"
+
+- name: Barman client | Add authorization rule for replication for user
+  lineinfile:
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/pg_hba.conf"
+    insertafter: "EOF"
+    line: "host replication {{BARMAN_CLIENT_POSTGRESQL_USER}} {{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32 md5"
+
+- name: Barman client | Add authorization rule for connections for user
+  lineinfile:
+    dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/pg_hba.conf"
+    insertafter: "EOF"
+    line: "host all {{BARMAN_CLIENT_POSTGRESQL_USER}} {{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32 md5"
+
+- name: Barman client | Create postgresql replication user and add grants
+  become_user: postgres
+  postgresql_user:
+    name: "{{BARMAN_CLIENT_POSTGRESQL_USER}}"
+    password: "{{BARMAN_CLIENT_POSTGRESQL_USER_PASSWORD}}"
+    role_attr_flags: "SUPERUSER"
+
+- name: Barman client | Restarting PostgreSQL
+  systemd:
+    state: restarted
+    name: postgresql

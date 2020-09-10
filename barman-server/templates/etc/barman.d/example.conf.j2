@@ -1,0 +1,10 @@
+[{{ BARMAN_SERVER_DB_CONF_FILE_NAME }}]
+description = "{{ BARMAN_SERVER_DB_CONF_FILE_DESCRIPTION }}"
+conninfo = "host={{ BARMAN_SERVER_DB_CONN_INFO_HOST }} user={{ BARMAN_SERVER_DB_CONN_INFO_USER }} password={{ BARMAN_SERVER_DB_CONN_INFO_USER_PASSWORD }} dbname={{ BARMAN_SERVER_DB_NAME }}"
+streaming_conninfo = "host={{ BARMAN_SERVER_DB_CONN_INFO_HOST }} user={{ BARMAN_SERVER_DB_CONN_INFO_USER }} password={{ BARMAN_SERVER_DB_CONN_INFO_USER_PASSWORD }} dbname={{ BARMAN_SERVER_DB_NAME }}"
+archiver = off
+backup_method = postgres
+streaming_archiver = on
+slot_name = "{{ BARMAN_SERVER_DB_SLOT_NAME }}"
+retention_policy = "{{ BARMAN_SERVER_RETENTION_POLICY }}"
+last_backup_maximum_age = "{{ BARMAN_SERVER_LAST_BACKUP_MAXIMUM_AGE }}"

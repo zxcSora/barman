@@ -1,0 +1,16 @@
+---
+- name: Config barman client
+  hosts: barman_client
+  become: "yes"
+  gather_facts: "yes"
+  roles:
+    - role: "barman-client"
+  tags: client
+
+- name: config barman server
+  hosts: barman_server
+  become: "yes"
+  gather_facts: "yes"
+  roles: 
+    - role: "barman-server"
+  tags: server
