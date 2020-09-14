@@ -1,10 +1,10 @@
 ---
-- name: Install Barman + PostgreSQL + Python Tools
+- name: Barman server | Install Barman + PostgreSQL + Python Tools
   apt:
     name: "{{ item }}"
     state: "present"
   loop:
-    - postgresql
+    - postgresql-client
     - python-dev
     - python-argh
     - python-psycopg2
@@ -13,7 +13,7 @@
     - python-setuptools
     - barman
 
-- name: Barman main configuration file
+- name: Barman server | Barman main configuration file
   template:
     src: "templates/etc/barman.conf.j2"
     dest: "/etc/barman.conf"
@@ -21,7 +21,7 @@
     group: "root"
     mode: "0644"
 
-- name: Barman main configuration file
+- name: Barman server | Barman clients configuration file
   template:
     src: "templates/etc/barman.d/example.conf.j2"
     dest: "/etc/barman.d/{{BARMAN_SERVER_DB_CONF_FILE_NAME}}.conf"
@@ -29,12 +29,12 @@
     group: "root"
     mode: "0644"
 
-- name: Creating slot for Barman connect
+- name: Barman server | Creating slot for Barman connect
   raw: |
     su - barman -c "barman receive-wal --create-slot {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
   ignore_errors: yes
-  
-- name: Barman slot creating
+
+- name: Barman server | Barman taking first wal-log
   raw: |
     su - barman -c "barman switch-wal --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
     if [ "$?" -ne 0 ]
@@ -42,3 +42,12 @@
     su - barman -c "barman switch-xlog --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
     fi
   ignore_errors: yes
+
+- name: Barman server | Creates a cron file under /etc/cron.d
+  cron:
+    name: "{{ BARMAN_SERVER_DB_CONF_FILE_NAME }}-barman"
+    minute: "30"
+    hour: "3"
+    user: barman
+    job: "/usr/bin/barman backup {{ BARMAN_SERVER_DB_CONF_FILE_NAME }}"
+    cron_file: "{{ BARMAN_SERVER_DB_CONF_FILE_NAME }}-barman"

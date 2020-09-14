@@ -61,6 +61,11 @@
     dest: "/etc/postgresql/{{BARMAN_CLIENT_POSTGRESQL_VERSION}}/main/pg_hba.conf"
     insertafter: "EOF"
     line: "host all {{BARMAN_CLIENT_POSTGRESQL_USER}} {{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32 md5"
+  register: changes_of_authenthication_file
+
+- name:
+  debug:
+    var: ansible_facts
 
 - name: Barman client | Create postgresql replication user and add grants
   become_user: postgres
@@ -71,5 +76,30 @@
 
 - name: Barman client | Restarting PostgreSQL
   systemd:
-    state: restarted
+    state: reloaded
     name: postgresql
+  when: changes_of_authenthication_file.changed == true
+
+- name: Barman client | Get the package facts
+  package_facts:
+    manager: "auto"
+
+- name: Barman client | Add Ferm rule for postgresql
+  template:
+   src: "templates/etc/ferm/filter-input.d/35_allow_postgresql_port_for_barman.conf.j2"
+   dest: "/etc/ferm/filter-input.d/35_allow_postgresql_port_for_barman.conf"
+   owner: "root"
+   group: "root"
+   mode: "0644"
+  when: ansible_facts.packages.ferm is defined
+
+- name: Barman client | Allow 5432 port for connections
+  iptables:
+    chain: INPUT
+    source: '{{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32'
+    jump: ACCEPT
+    protocol: tcp
+    destination_port: "5432"
+    comment: /* allow postgresql for barman */
+  when: ansible_facts.packages.ferm is not defined
+
