@@ -1,0 +1,4 @@
+[barman_client]
+barman_client	ansible_host=10.15.58.231
+[barman_server]
+barman_server	ansible_host=10.15.58.232
