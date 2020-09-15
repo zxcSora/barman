@@ -63,10 +63,6 @@
     line: "host all {{BARMAN_CLIENT_POSTGRESQL_USER}} {{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32 md5"
   register: changes_of_authenthication_file
 
-- name:
-  debug:
-    var: ansible_facts
-
 - name: Barman client | Create postgresql replication user and add grants
   become_user: postgres
   postgresql_user:
