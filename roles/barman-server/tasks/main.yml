@@ -36,10 +36,10 @@
 
 - name: Barman server | Barman taking first wal-log
   raw: |
-    su - barman -c "barman switch-wal --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
+    su - barman -c "barman switch-xlog --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
     if [ "$?" -ne 0 ]
     then
-    su - barman -c "barman switch-xlog --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
+    su - barman -c "barman switch-wal --force --archive {{BARMAN_SERVER_DB_CONF_FILE_NAME}}"
     fi
   ignore_errors: yes
 
