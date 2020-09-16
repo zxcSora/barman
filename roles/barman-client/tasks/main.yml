@@ -1,19 +1,8 @@
----
-- name: Barman client | Install Postgresql server
-  apt:
-    name: "postgresql-{{ BARMAN_CLIENT_POSTGRESQL_VERSION }}"
-
-- name: Barman client | Install Postgresql server tools
-  apt:
-    name: "{{ item }}"
-    state: "present"
-  loop: 
-    - postgresql-server-dev-9.6
-    - python-pip
-
-- name: Barman client | Install Postgresql server tools
-  pip:
-    name: "psycopg2"
+- name: Barman | Check DB user for exists
+  raw: |
+    sudo -u postgres /usr/bin/psql -c "\du" | grep -i {{ BARMAN_CLIENT_POSTGRESQL_USER }}
+  register: result_grep_exist_user
+  ignore_errors: yes
 
 - name:  Barman client | WAL LEVEL
   lineinfile: 
@@ -63,14 +52,20 @@
     line: "host all {{BARMAN_CLIENT_POSTGRESQL_USER}} {{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32 md5"
   register: changes_of_authenthication_file
 
-- name: Barman client | Create postgresql replication user and add grants
-  become_user: postgres
-  postgresql_user:
-    name: "{{BARMAN_CLIENT_POSTGRESQL_USER}}"
-    password: "{{BARMAN_CLIENT_POSTGRESQL_USER_PASSWORD}}"
-    role_attr_flags: "SUPERUSER"
+- name:  Barman client | Create postgresql replication user and add grants
+  become: yes
+  raw: |
+    sudo -u postgres /usr/bin/psql -c "CREATE USER {{ BARMAN_CLIENT_POSTGRESQL_USER }} WITH REPLICATION SUPERUSER;"
+  register: result_create_user
+  when: result_grep_exist_user.failed == true
 
-- name: Barman client | Restarting PostgreSQL
+- name:  Barman client | Set password for backup_user
+  become: yes
+  raw: |
+    sudo -u postgres /usr/bin/psql -c "ALTER USER {{ BARMAN_CLIENT_POSTGRESQL_USER }} WITH PASSWORD '{{ BARMAN_CLIENT_POSTGRESQL_USER_PASSWORD }}';"
+  when: result_grep_exist_user.failed == true      
+
+- name: Barman client | Reload PostgreSQL
   systemd:
     state: reloaded
     name: postgresql
