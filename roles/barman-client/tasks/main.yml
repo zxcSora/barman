@@ -83,14 +83,21 @@
    group: "root"
    mode: "0644"
   when: ansible_facts.packages.ferm is defined
-
+  register: changes_of_ferm_rules
+  
+- name: Barman client | Reload Ferm
+  systemd:
+    state: reloaded
+    name: ferm
+  when: changes_of_ferm_rules.changed == true
+  
 - name: Barman client | Allow 5432 port for connections
   iptables:
     chain: INPUT
     source: '{{BARMAN_CLIENT_IP_OF_BACKUP_SERVER}}/32'
     jump: ACCEPT
     protocol: tcp
-    destination_port: "5432"
+    destination_port: "{{BARMAN_CLIENT_PORT_FOR_CONNECTION}}"
     comment: /* allow postgresql for barman */
   when: ansible_facts.packages.ferm is not defined
 

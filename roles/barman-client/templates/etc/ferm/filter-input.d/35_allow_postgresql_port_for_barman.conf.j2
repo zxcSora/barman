@@ -1,1 +1,1 @@
-proto tcp dport 5432 saddr ({{ BARMAN_CLIENT_IP_OF_BACKUP_SERVER }}/32) mod comment comment "allow postgresql for barman" ACCEPT;
+proto tcp dport {{BARMAN_CLIENT_PORT_FOR_CONNECTION}} saddr ({{ BARMAN_CLIENT_IP_OF_BACKUP_SERVER }}/32) mod comment comment "allow postgresql for barman" ACCEPT;

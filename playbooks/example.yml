@@ -3,12 +3,12 @@
 #### Notification: you need to deploy barman-client role first! ####
 
 - name: Config barman client
-  hosts: barman_client
+  hosts: barman-client
   become: "yes"
   gather_facts: "yes"
   roles:
-    - role: "barman-client"
-      BARMAN_CLIENT_POSTGRESQL_VERSION: "9.6"
+    - role: "roles/barman-client"
+      BARMAN_CLIENT_POSTGRESQL_VERSION: "10"
       BARMAN_CLINET_LISTEN_ADDRESSES: "*"
       BARMAN_CLIENT_POSTGRESQL_MAX_WAL_SENDERS: "8"
       BARMAN_CLIENT_POSTGRESQL_MAX_REPL_SLOTS: "8"
@@ -18,11 +18,11 @@
   tags: client
 
 - name: config barman server
-  hosts: barman_server
+  hosts: barman-server
   become: "yes"
   gather_facts: "yes"
   roles: 
-    - role: "barman-server"
+    - role: "roles/barman-server"
       BARMAN_SERVER_HOME_DIR: "/var/lib/barman"
       BARMAN_SERVER_DB_CONF_FILE_NAME: "postgres"
       BARMAN_SERVER_DB_CONF_FILE_DESCRIPTION: "your description"
